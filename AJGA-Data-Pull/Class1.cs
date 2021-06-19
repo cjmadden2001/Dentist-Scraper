@@ -43,10 +43,11 @@ namespace AJGA_Data_Pull
         Microsoft.Office.Interop.Excel._Worksheet oSheet;
 
         public int excelRow = 2;
+        List<string> cities = new List<string>();
         static void Main(string[] args)
         {
             Program prog = new Program();
-            //prog.DentistParser();
+            //prog.StateSelect("http://www.nationaldirectoryofdentists.com/dentists/");
             prog.DentistParser();
 
         }
@@ -103,9 +104,14 @@ namespace AJGA_Data_Pull
             oXL.Cells[1, 11] = "URL";
 
             // Parse City
-            CityParse("http://www.nationaldirectoryofdentists.com/dentists/OH/Canton");
-            CityParse("http://www.nationaldirectoryofdentists.com/dentists/KY/Florence");
-            CityParse("http://www.nationaldirectoryofdentists.com/dentists/IN/Muncie");
+            StateSelect("http://www.nationaldirectoryofdentists.com/dentists/");
+            for (int i=0; i<cities.Count; i++)
+            {
+                CityParse(cities[i]);
+            }
+            
+            //CityParse("http://www.nationaldirectoryofdentists.com/dentists/OH/Canton?page=9");
+            //CityParse("http://www.nationaldirectoryofdentists.com/dentists/IN/Muncie");
 
             oWB.SaveAs(outputFile, Microsoft.Office.Interop.Excel.XlFileFormat.xlWorkbookDefault, Type.Missing, Type.Missing,
                 false, false, Microsoft.Office.Interop.Excel.XlSaveAsAccessMode.xlNoChange,
@@ -117,6 +123,30 @@ namespace AJGA_Data_Pull
             if (mainbrowser != null) { mainbrowser.Dispose(); }
             if (popwindow != null) { popwindow.Dispose(); }
 
+        }
+        public void StateSelect(string mainURL)
+        {
+            mainbrowser.Navigate().GoToUrl(mainURL);
+
+            // parse page
+            string stateXPath = "//div[@id='content']/div/div/div/p";
+            foreach (IWebElement state in mainbrowser.FindElements(By.XPath(stateXPath)))
+            {
+                string stateURL = state.FindElement(By.TagName("a")).GetAttribute("href");
+                Console.WriteLine(string.Format("--------------------- Pulling {0} Cities ---------------------", state.FindElement(By.TagName("a")).Text));
+                popwindow.Navigate().GoToUrl(stateURL);
+                CityList(stateURL);
+            }
+        }
+        public void CityList(string stateURL)
+        {
+            // parse page
+            string cityXPath = "//div[@id='content']/div/div/div/p";
+            foreach (IWebElement city in popwindow.FindElements(By.XPath(cityXPath)))
+            {
+                string cityURL = city.FindElement(By.TagName("a")).GetAttribute("href");
+                cities.Add(cityURL);
+            }
         }
         public void CityParse(string CityURL)
         {
