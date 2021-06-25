@@ -138,6 +138,7 @@ namespace AJGA_Data_Pull
                 Console.WriteLine(string.Format("--------------------- Pulling {0} Cities ---------------------", state.FindElement(By.TagName("a")).Text));
                 popwindow.Navigate().GoToUrl(stateURL);
                 CityList(stateURL);
+                //System.Threading.Thread.Sleep(1 * 1000); // wait one second after each state
             }
         }
         public void CityList(string stateURL)
@@ -146,7 +147,14 @@ namespace AJGA_Data_Pull
             string cityXPath = "//div[@id='content']/div/div/div/p";
             foreach (IWebElement city in popwindow.FindElements(By.XPath(cityXPath)))
             {
-                string cityURL = city.FindElement(By.TagName("a")).GetAttribute("href");
+                string cityURL = null;
+                    try { 
+                        cityURL = city.FindElement(By.TagName("a")).GetAttribute("href");
+                    }
+                    catch {
+                        Console.WriteLine(string.Format("-**** ERROR ON CITY:  {0}", cityURL));
+                        //cityURL = city.FindElement(By.TagName("a")).GetAttribute("href");
+                }
                 cities.Add(cityURL);
             }
         }
@@ -162,7 +170,7 @@ namespace AJGA_Data_Pull
             while (NextPageExists)
             {
                 // Get Jobs
-                Console.WriteLine(string.Format("--------------------- Parsing Page {0} ---------------------", currentPage.ToString()));
+                Console.WriteLine(string.Format("--------------------- Parsing {0} - {1}", CityURL, DateTime.Now.ToString("G")));
 
                 // parse page
                 string JobRowXPath = "//ul[@class='results']/li";
