@@ -19,10 +19,7 @@ namespace AJGA_Data_Pull
     {
         public string CitySection { get; set; }
         public string Name { get; set; }
-        public string First { get; set; }
-        public string Last { get; set; }
         public string Address { get; set; }
-        public string Address2 { get; set; }
         public string City { get; set; }
         public string St { get; set; }
         public string Zip { get; set; }
@@ -96,17 +93,15 @@ namespace AJGA_Data_Pull
 
             oXL.Cells[1, 1] = "CityURL";
             oXL.Cells[1, 2] = "Name";
-            oXL.Cells[1, 3] = "First";
-            oXL.Cells[1, 4] = "Last";
-            oXL.Cells[1, 5] = "Addr1";
-            oXL.Cells[1, 6] = "Addr2";
-            oXL.Cells[1, 7] = "City";
-            oXL.Cells[1, 8] = "St";
-            oXL.Cells[1, 9] = "Zip";
-            oXL.Cells[1, 10] = "Phone";
-            oXL.Cells[1, 11] = "Fax";
-            oXL.Cells[1, 12] = "Specialty";
-            oXL.Cells[1, 13] = "URL";
+            oXL.Cells[1, 3] = "Address";
+            oXL.Cells[1, 4] = "City";
+            oXL.Cells[1, 5] = "St";
+            oXL.Cells[1, 6] = "Zip";
+            oXL.Cells[1, 7] = "Phone";
+            oXL.Cells[1, 8] = "Fax";
+            oXL.Cells[1, 9] = "Other";
+            oXL.Cells[1, 10] = "Specialty";
+            oXL.Cells[1, 11] = "URL";
 
             // Parse City
             StateSelect("http://www.nationaldirectoryofdentists.com/dentists/");
@@ -199,7 +194,6 @@ namespace AJGA_Data_Pull
                             else { CityStZip = RecDetails[0]; }
                     } catch { }
                     try { drec.Address = AddressLine; } catch { }
-                    try { drec.Address2 = AddressLine; } catch { }
                     try { drec.City = CityStZip.Split(',')[0]; } catch { }
                     try { drec.St = CityStZip.Split(',')[1].Trim().Split(' ')[0]; } catch { }
                     try { drec.Zip = CityStZip.Split(',')[1].Trim().Split(' ')[1]; } catch { }
@@ -212,17 +206,15 @@ namespace AJGA_Data_Pull
                     // Place in Excel Row
                     oXL.Cells[excelRow, 1] = drec.CitySection;
                     oXL.Cells[excelRow, 2] = drec.Name;
-                    oXL.Cells[excelRow, 3] = drec.First;
-                    oXL.Cells[excelRow, 4] = drec.Last;
-                    oXL.Cells[excelRow, 5] = drec.Address;
-                    oXL.Cells[excelRow, 6] = drec.Address2;
-                    oXL.Cells[excelRow, 7] = drec.City;
-                    oXL.Cells[excelRow, 8] = drec.St;
-                    oXL.Cells[excelRow, 9] = drec.Zip;
-                    oXL.Cells[excelRow, 10] = drec.Phone;
-                    oXL.Cells[excelRow, 11] = drec.Fax;
-                    oXL.Cells[excelRow, 12] = drec.Specialty;
-                    oXL.Cells[excelRow, 13] = drec.URL;
+                    oXL.Cells[excelRow, 3] = drec.Address;
+                    oXL.Cells[excelRow, 4] = drec.City;
+                    oXL.Cells[excelRow, 5] = drec.St;
+                    oXL.Cells[excelRow, 6] = drec.Zip;
+                    oXL.Cells[excelRow, 7] = drec.Phone;
+                    oXL.Cells[excelRow, 8] = drec.Fax;
+                    oXL.Cells[excelRow, 9] = drec.Other;
+                    oXL.Cells[excelRow, 10] = drec.Specialty;
+                    oXL.Cells[excelRow, 11] = drec.URL;
 
                     excelRow += 1;
                 }
