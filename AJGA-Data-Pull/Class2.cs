@@ -12,20 +12,19 @@ using Excel = Microsoft.Office.Interop.Excel;
 using System.Runtime.InteropServices;
 using Microsoft.Office.Core;
 
-namespace AJGA_Data_Pull
+namespace Aetna_Scraper
 {
 
     public class Dentist
     {
         public string CitySection { get; set; }
         public string Name { get; set; }
-        public string FName { get; set; }
-        public string LName { get; set; }
-        public string Address { get; set; }
+        public string Address1 { get; set; }
+        public string Address2 { get; set; }
         public string City { get; set; }
         public string St { get; set; }
         public string Zip { get; set; }
-        public string Phone { get; set; }    
+        public string Phone { get; set; }
         public string Fax { get; set; }
         public string Other { get; set; }
         public string Specialty { get; set; }
@@ -71,7 +70,7 @@ namespace AJGA_Data_Pull
             // Write the string array to a new file named "WriteLines.txt".
             //StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "2020 AJGA Events.CSV"));
 
-            var outputFile = new FileInfo(Path.Combine(docPath, "Dentists.xlsx"));
+            var outputFile = new FileInfo(Path.Combine(docPath, "AetnaDentists.xlsx"));
             if (File.Exists(outputFile.ToString()))
             {
                 File.Delete(outputFile.ToString());
@@ -106,12 +105,12 @@ namespace AJGA_Data_Pull
             oXL.Cells[1, 11] = "URL";
 
             // Parse City
-            StateSelect("http://www.nationaldirectoryofdentists.com/dentists/");
-            for (int i=0; i<cities.Count; i++)
+            StateSelect("https://www.aetna.com/dsepublic/#/contentPage?page=providerResults&parameters=searchText%3D'All%20Dental%20Professionals';isGuidedSearch%3Dtrue&site_id=DirectLinkDental&language=en");
+            for (int i = 0; i < cities.Count; i++)
             {
                 CityParse(cities[i]);
             }
-            
+
             //CityParse("http://www.nationaldirectoryofdentists.com/dentists/OH/Canton?page=9");
             //CityParse("http://www.nationaldirectoryofdentists.com/dentists/IN/Muncie");
 
@@ -126,33 +125,15 @@ namespace AJGA_Data_Pull
             if (popwindow != null) { popwindow.Dispose(); }
 
         }
-        public void StateSelect(string mainURL)
+        public void StateSelect()
         {
-            mainbrowser.Navigate().GoToUrl(mainURL);
 
-            // parse page
-            string stateXPath = "//div[@id='content']/div/div/div/p";
-            foreach (IWebElement state in mainbrowser.FindElements(By.XPath(stateXPath)))
-            {
-                string stateURL = state.FindElement(By.TagName("a")).GetAttribute("href");
-                Console.WriteLine(string.Format("--------------------- Pulling {0} Cities ---------------------", state.FindElement(By.TagName("a")).Text));
-                popwindow.Navigate().GoToUrl(stateURL);
-                CityList(stateURL);
-            }
+
+
         }
-        public void CityList(string stateURL)
+        public void CityParse(string URL)
         {
-            // parse page
-            string cityXPath = "//div[@id='content']/div/div/div/p";
-            foreach (IWebElement city in popwindow.FindElements(By.XPath(cityXPath)))
-            {
-                string cityURL = city.FindElement(By.TagName("a")).GetAttribute("href");
-                cities.Add(cityURL);
-            }
-        }
-        public void CityParse(string CityURL)
-        {
-            mainbrowser.Navigate().GoToUrl(CityURL);
+            mainbrowser.Navigate().GoToUrl(URL);
 
             // Check for Next Button
             int currentPage = 1;
@@ -165,44 +146,34 @@ namespace AJGA_Data_Pull
                 Console.WriteLine(string.Format("--------------------- Parsing Page {0} ---------------------", currentPage.ToString()));
 
                 // parse page
-                string JobRowXPath = "//ul[@class='results']/li";
-
+                string JobRowXPath = "//div[@class='dataGridTableContant']/li[@class='col-xs-12 pad0 dataGridRow customPurpleRecord']}";
                 foreach (IWebElement jobrow in mainbrowser.FindElements(By.XPath(JobRowXPath)))
                 {
                     // Pull job row for data grab
                     Dentist drec = new Dentist();
 
-                    // Get URL for Dentist Record and pop in other window
-                    string popURL = jobrow.FindElement(By.TagName("a")).GetAttribute("href");
-                    popwindow.Navigate().GoToUrl(popURL);
-
-                    string[] RecDetails = { };
-                    string CityStZip = ""; string AddressLine = "";
+                    string CityStZip = "";
                     // Rip Data
-                    try { drec.CitySection = CityURL; } catch { }
-                    try { drec.Name = popwindow.FindElement(By.XPath("//div[@class='prodetailsname']")).Text; } catch { }
-                    try { drec.FName = drec.Name.Split(' ')[0]; } catch { }
-                    try { drec.LName = drec.Name.Split(' ')[1]; } catch { }
-                    try { 
-                        RecDetails = popwindow.FindElement(By.XPath("//div[@class='address']")).Text.Replace("\r", "").Split('\n');
-                        if (RecDetails.Count() > 1) 
-                            { AddressLine = RecDetails[0]; CityStZip = RecDetails[1]; } 
-                            else { CityStZip = RecDetails[0]; }
-                    } catch { }
-                    try { drec.Address = AddressLine; } catch { }
+                    try { drec.CitySection = URL; } catch { }
+                    try { drec.Name = mainbrowser.FindElement(By.XPath("//a[@class='providerNameDetails']")).Text; } catch { }
+                    try
+                    {
+                        CityStZip = mainbrowser.FindElement(By.XPath("//div[@ng-if='provider.providerLocations.address.streetLine2']")).Text.Replace("\r", "");
+                    }
+                    catch { }
+                    try { drec.Address1 = mainbrowser.FindElement(By.XPath("//span[@ng-bind-html='provider.providerLocations.address.streetLine1|trustHtml']")).Text; } catch { }
+                    try { drec.Address2 = mainbrowser.FindElement(By.XPath("//span[@ng-bind-html='provider.providerLocations.address.streetLine2|trustHtml']")).Text; } catch { }
                     try { drec.City = CityStZip.Split(',')[0]; } catch { }
                     try { drec.St = CityStZip.Split(',')[1].Trim().Split(' ')[0]; } catch { }
                     try { drec.Zip = CityStZip.Split(',')[1].Trim().Split(' ')[1]; } catch { }
-                    try { drec.Phone = RecDetails[2].Split(':')[1].Trim(); } catch { }
-                    try { drec.Fax = RecDetails[3].Split(':')[1].Trim(); } catch { }
-                    try { drec.Other = RecDetails[4]; } catch { }
-                    try { drec.Specialty = popwindow.FindElement(By.XPath("//div[@class='prodetailsspecialty']")).Text; } catch { }
-                    try { drec.URL = popURL; } catch { }
-                   
+                    try { drec.Phone = mainbrowser.FindElement(By.XPath("//span[@class='dataGridPadding padL3']")).Text; } catch { }
+                    try { drec.Specialty = mainbrowser.FindElement(By.XPath("//span[@ng-bind-html='spec.specialty.description | trustHtml']")).Text; } catch { }
+
                     // Place in Excel Row
                     oXL.Cells[excelRow, 1] = drec.CitySection;
                     oXL.Cells[excelRow, 2] = drec.Name;
-                    oXL.Cells[excelRow, 3] = drec.Address;
+                    oXL.Cells[excelRow, 3] = drec.Address1;
+
                     oXL.Cells[excelRow, 4] = drec.City;
                     oXL.Cells[excelRow, 5] = drec.St;
                     oXL.Cells[excelRow, 6] = drec.Zip;
@@ -210,7 +181,6 @@ namespace AJGA_Data_Pull
                     oXL.Cells[excelRow, 8] = drec.Fax;
                     oXL.Cells[excelRow, 9] = drec.Other;
                     oXL.Cells[excelRow, 10] = drec.Specialty;
-                    oXL.Cells[excelRow, 11] = drec.URL;
 
                     excelRow += 1;
                 }
@@ -218,16 +188,16 @@ namespace AJGA_Data_Pull
                 try
                 {
                     // Check for Next Button
-                    NextPageExists = mainbrowser.FindElements(By.XPath("//a[contains(text(),'next >')]")).Count > 0;
+                    NextPageExists = mainbrowser.FindElements(By.XPath("//a[@class='next-link']")).Count > 0;
 
                     // Click Next page button
                     if (NextPageExists)
                     {
-                        mainbrowser.FindElement(By.XPath("//a[contains(text(),'next >')]")).Click();
+                        mainbrowser.FindElement(By.XPath("//a[@class='next-link']")).Click();
                     }
 
                     currentPage++;
-                    CityURL = mainbrowser.Url;
+                    URL = mainbrowser.Url;
 
                 }
                 catch { }
