@@ -19,7 +19,9 @@ namespace Aetna_Scraper
     {
         public string CitySection { get; set; }
         public string Name { get; set; }
-        public string Address1 { get; set; }
+        public string FName { get; set; }
+        public string LName { get; set; }
+        public string Address { get; set; }
         public string Address2 { get; set; }
         public string City { get; set; }
         public string St { get; set; }
@@ -32,11 +34,11 @@ namespace Aetna_Scraper
 
     }
 
-    public class Program
+    public class AetnaProgram
     {
         // Start Chrome windows (main and secondary)
         IWebDriver mainbrowser = new ChromeDriver(@"C:\Program Files\chromedriver");
-        IWebDriver popwindow = new ChromeDriver(@"C:\Program Files\chromedriver");
+        //IWebDriver popwindow = new ChromeDriver(@"C:\Program Files\chromedriver");
 
         // Excel Objects
         Microsoft.Office.Interop.Excel.Application oXL;
@@ -45,19 +47,9 @@ namespace Aetna_Scraper
 
         public int excelRow = 2;
         List<string> cities = new List<string>();
-        //static void Main(string[] args)
-        //{
-        //    Program prog = new Program();
-        //    //prog.StateSelect("http://www.nationaldirectoryofdentists.com/dentists/");
-        //    prog.DentistParser();
 
-        //}
+        string[] stateList = { "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "District Of Columbia", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming" };
 
-        public void TestMethod()
-        {
-            popwindow.Navigate().GoToUrl("https://www.whitepages.com/");
-
-        }
 
         public void DentistParser()
         {
@@ -86,31 +78,46 @@ namespace Aetna_Scraper
             oSheet = (Microsoft.Office.Interop.Excel._Worksheet)oWB.ActiveSheet;
 
             mainbrowser.Manage().Window.Size = new Size(1300, 1500);
-            popwindow.Manage().Window.Size = new Size(1300, 1500);
+            //popwindow.Manage().Window.Size = new Size(1300, 1500);
 
             List<Dentist> PlayerList = new List<Dentist>();
 
             oXL.Cells[1, 1] = "CityURL";
             oXL.Cells[1, 2] = "Name";
-            oXL.Cells[1, 3] = "Address";
-            oXL.Cells[1, 4] = "City";
-            oXL.Cells[1, 5] = "St";
-            oXL.Cells[1, 6] = "Zip";
-            oXL.Cells[1, 7] = "Phone";
-            oXL.Cells[1, 8] = "Fax";
-            oXL.Cells[1, 9] = "Other";
-            oXL.Cells[1, 10] = "Specialty";
-            oXL.Cells[1, 11] = "URL";
+            oXL.Cells[1, 3] = "First";
+            oXL.Cells[1, 4] = "Last";
+            oXL.Cells[1, 5] = "Addr1";
+            oXL.Cells[1, 6] = "Addr2";
+            oXL.Cells[1, 7] = "City";
+            oXL.Cells[1, 8] = "St";
+            oXL.Cells[1, 9] = "Zip";
+            oXL.Cells[1, 10] = "Phone";
+            oXL.Cells[1, 11] = "Fax";
+            oXL.Cells[1, 12] = "Specialty";
+            oXL.Cells[1, 13] = "URL";
 
             // Parse City
-            //StateSelect("https://www.aetna.com/dsepublic/#/contentPage?page=providerResults&parameters=searchText%3D''All%20Dental%20Professionals'';isGuidedSearch%3Dtrue&site_id=DirectLinkDental&language=en");
-            for (int i = 0; i < cities.Count; i++)
-            {
-                CityParse(cities[i]);
+            // https://www.aetna.com/dsepublic/#/contentPage?page=providerResults&parameters=searchText%3D'All%20Dental%20Professionals';isGuidedSearch%3Dtrue&site_id=DirectLinkDental&language=en
+
+            string stateSelecURL = "https://www.aetna.com/dsepublic/#/contentPage?page=providerResults&parameters=searchText%3D'All%20Dental%20Professionals';isGuidedSearch%3Dtrue&site_id=DirectLinkDental&language=en";
+            mainbrowser.Navigate().GoToUrl(stateSelecURL);
+
+            // Select arbitrary state to get to the starting list
+            waitForElement("//input[@id='zip1']");
+            mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys("Alabama");
+            System.Threading.Thread.Sleep(1 * 1000); // 0.5 seconds
+            mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys(Keys.Tab);
+            System.Threading.Thread.Sleep(1*1000); // 0.5 seconds
+            mainbrowser.FindElement(By.XPath("//button[@id='second-step-continue']")).Click(); //search button
+            
+            waitForElement("//a[@class='skipPlanBottom floatR']");
+            mainbrowser.FindElement(By.XPath("//a[@class='skipPlanBottom floatR']")).Click();
+
+            foreach (string state in stateList) { 
+                StateSelect();
+                StateParse();
             }
 
-            //CityParse("http://www.nationaldirectoryofdentists.com/dentists/OH/Canton?page=9");
-            //CityParse("http://www.nationaldirectoryofdentists.com/dentists/IN/Muncie");
 
             oWB.SaveAs(outputFile, Microsoft.Office.Interop.Excel.XlFileFormat.xlWorkbookDefault, Type.Missing, Type.Missing,
                 false, false, Microsoft.Office.Interop.Excel.XlSaveAsAccessMode.xlNoChange,
@@ -120,10 +127,56 @@ namespace Aetna_Scraper
             oXL.Quit();
 
             if (mainbrowser != null) { mainbrowser.Dispose(); }
-            if (popwindow != null) { popwindow.Dispose(); }
+            //if (popwindow != null) { popwindow.Dispose(); }
 
         }
+
+        public void waitForElement(string Xpath)
+        {
+
+            int currentWait = 0;
+            int waitIncrement = 1000;
+            int maxWait = 60 * 1000;
+            try
+            {
+                while (mainbrowser.FindElements(By.XPath(Xpath)).Count<1 && (currentWait <= maxWait))
+                {
+                    System.Threading.Thread.Sleep(waitIncrement); // 0.5 seconds
+                    currentWait += waitIncrement;
+                    Console.WriteLine("...Total Wait Time: " + currentWait.ToString());
+                }
+
+            }
+            catch (Exception ex) { }
+
+        }
+
         public void StateSelect()
+        {
+            // change location
+
+            foreach (string state in stateList) {
+                waitForElement("//a[@id='aet-change-loc']");
+                mainbrowser.FindElement(By.XPath("//a[@id='aet-change-loc']")).Click();
+
+                waitForElement("//input[@id='zip1']");
+                mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).Clear();
+                mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys(state);
+                mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys(Keys.Tab);
+                mainbrowser.FindElement(By.XPath("//button[contains(text(),'Update my view')]")).Click();
+
+                waitForElement("//a[contains(text(),'Dental Care')]");
+                mainbrowser.FindElement(By.XPath("//a[contains(text(),'Dental Care')]")).Click();
+
+                waitForElement("//a[contains(text(),'All Dental Professionals')]");
+                mainbrowser.FindElement(By.XPath("//a[contains(text(),'All Dental Professionals')]")).Click();
+
+                StateParse();
+            }
+
+        }
+
+        public void StateParse()
         {
 
 
@@ -159,7 +212,7 @@ namespace Aetna_Scraper
                         CityStZip = mainbrowser.FindElement(By.XPath("//div[@ng-if='provider.providerLocations.address.streetLine2']")).Text.Replace("\r", "");
                     }
                     catch { }
-                    try { drec.Address1 = mainbrowser.FindElement(By.XPath("//span[@ng-bind-html='provider.providerLocations.address.streetLine1|trustHtml']")).Text; } catch { }
+                    try { drec.Address = mainbrowser.FindElement(By.XPath("//span[@ng-bind-html='provider.providerLocations.address.streetLine1|trustHtml']")).Text; } catch { }
                     try { drec.Address2 = mainbrowser.FindElement(By.XPath("//span[@ng-bind-html='provider.providerLocations.address.streetLine2|trustHtml']")).Text; } catch { }
                     try { drec.City = CityStZip.Split(',')[0]; } catch { }
                     try { drec.St = CityStZip.Split(',')[1].Trim().Split(' ')[0]; } catch { }
@@ -170,7 +223,7 @@ namespace Aetna_Scraper
                     // Place in Excel Row
                     oXL.Cells[excelRow, 1] = drec.CitySection;
                     oXL.Cells[excelRow, 2] = drec.Name;
-                    oXL.Cells[excelRow, 3] = drec.Address1;
+                    oXL.Cells[excelRow, 3] = drec.Address;
 
                     oXL.Cells[excelRow, 4] = drec.City;
                     oXL.Cells[excelRow, 5] = drec.St;

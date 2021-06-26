@@ -14,7 +14,7 @@ using Microsoft.Office.Core;
 using System.Text.RegularExpressions;
 
 
-namespace AJGA_Data_Pull
+namespace Dentist_Scraper
 {
 
     public class Dentist
@@ -50,12 +50,12 @@ namespace AJGA_Data_Pull
         public int excelRow = 2;
         List<string> cities = new List<string>();
 
-        static void Main(string[] args)
-        {
-            Program prog = new Program();
-            prog.DentistParser();
+        //static void Main(string[] args)
+        //{
+        //    Program prog = new Program();
+        //    prog.DentistParser();
 
-        }
+        //}
 
         public void TestMethod()
         {
@@ -138,8 +138,9 @@ namespace AJGA_Data_Pull
             string stateXPath = "//div[@id='content']/div/div/div/p";
             foreach (IWebElement state in mainbrowser.FindElements(By.XPath(stateXPath)))
             {
-                string stateList = "Alaska,Arizona,Arkansas,California,Colorado,Connecticut,Delaware,District Of Columbia,Florida";
-                    //"Georgia,Hawaii,Idaho,Illinois,Indiana,Iowa,Kansas,Kentucky,Louisiana,Maine,Maryland,Massachusetts,Michigan,Minnesota,Mississippi,Missouri,Montana,Nebraska,Nevada,New Hampshire, New Jersey,New Mexico, New York,North Carolina, North Dakota,Ohio,Oklahoma,Oregon,Pennsylvania,Rhode Island, South Carolina,South Dakota, Tennessee, Texas, Utah, Vermont, Virginia, Washington, West Virginia,Wisconsin,Wyoming";
+                string stateList = "Tennessee,Texas,Utah,Vermont,Virginia,Washington,West Virginia,Wisconsin,Wyoming";
+                // Indiana,Iowa,Kansas,Kentucky,Louisiana,Maine,Maryland,Massachusetts,Michigan,Minnesota,Mississippi,Missouri,Montana,Nebraska,Nevada,New Hampshire, New Jersey,New Mexico, New York,North Carolina, North Dakota,Ohio,Oklahoma,Oregon,Pennsylvania,Rhode Island, South Carolina,South Dakota,
+                //"Alabama,Alaska,Arizona,Arkansas,California,Colorado,Connecticut,Delaware,District Of Columbia,Florida,Georgia,Hawaii,Idaho,Illinois,";
                 if (stateList.Contains(state.Text))
                 {
                     string stateURL = state.FindElement(By.TagName("a")).GetAttribute("href");
@@ -255,7 +256,7 @@ namespace AJGA_Data_Pull
                         { RecDetails = RecDetails.Where(w => w != RecDetails[0]).ToArray(); }
 
                         // find city,st zip line
-                        string pattern = @",\s(AL|AK|AS|AZ|AR|CA|CO|CT|DE|DC|FM|FL|GA|GU|HI|ID|IL|IN|IA|KS|KY|LA|ME|MH|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|MP|OH|OK|OR|PW|PA|PR|RI|SC|SD|TN|TX|UT|VT|VI|VA|WA|WV|WI|WY)\s\d{5}";
+                        string pattern = @",\s(AL|AK|AS|AZ|AR|CA|CO|CT|DE|DC|FM|FL|GA|GU|HI|ID|IL|IN|IA|KS|KY|LA|ME|MH|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|MP|OH|OK|OR|PW|PA|PR|RI|SC|SD|TN|TX|UT|VT|VI|VA|WA|WV|WI|WY)\s\d+";
                         foreach (string line in RecDetails)
                         { 
                             if (Regex.IsMatch(line, pattern)) { break; } else { CSZline += 1; }
