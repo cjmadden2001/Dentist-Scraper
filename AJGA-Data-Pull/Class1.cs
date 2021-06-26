@@ -11,6 +11,8 @@ using System.IO;
 using Excel = Microsoft.Office.Interop.Excel;
 using System.Runtime.InteropServices;
 using Microsoft.Office.Core;
+using System.Text.RegularExpressions;
+
 
 namespace AJGA_Data_Pull
 {
@@ -22,6 +24,7 @@ namespace AJGA_Data_Pull
         public string FName { get; set; }
         public string LName { get; set; }
         public string Address { get; set; }
+        public string Address2 { get; set; }
         public string City { get; set; }
         public string St { get; set; }
         public string Zip { get; set; }
@@ -46,10 +49,10 @@ namespace AJGA_Data_Pull
 
         public int excelRow = 2;
         List<string> cities = new List<string>();
+
         static void Main(string[] args)
         {
             Program prog = new Program();
-            //prog.StateSelect("http://www.nationaldirectoryofdentists.com/dentists/");
             prog.DentistParser();
 
         }
@@ -57,8 +60,6 @@ namespace AJGA_Data_Pull
         public void TestMethod()
         {
             popwindow.Navigate().GoToUrl("https://www.whitepages.com/");
-
-            string waithere = "";
 
         }
 
@@ -95,25 +96,27 @@ namespace AJGA_Data_Pull
 
             oXL.Cells[1, 1] = "CityURL";
             oXL.Cells[1, 2] = "Name";
-            oXL.Cells[1, 3] = "Address";
-            oXL.Cells[1, 4] = "City";
-            oXL.Cells[1, 5] = "St";
-            oXL.Cells[1, 6] = "Zip";
-            oXL.Cells[1, 7] = "Phone";
-            oXL.Cells[1, 8] = "Fax";
-            oXL.Cells[1, 9] = "Other";
-            oXL.Cells[1, 10] = "Specialty";
-            oXL.Cells[1, 11] = "URL";
+            oXL.Cells[1, 3] = "First";
+            oXL.Cells[1, 4] = "Last";
+            oXL.Cells[1, 5] = "Addr1";
+            oXL.Cells[1, 6] = "Addr2";
+            oXL.Cells[1, 7] = "City";
+            oXL.Cells[1, 8] = "St";
+            oXL.Cells[1, 9] = "Zip";
+            oXL.Cells[1, 10] = "Phone";
+            oXL.Cells[1, 11] = "Fax";
+            oXL.Cells[1, 12] = "Specialty";
+            oXL.Cells[1, 13] = "URL";
 
             // Parse City
             StateSelect("http://www.nationaldirectoryofdentists.com/dentists/");
-            for (int i=0; i<cities.Count; i++)
+            for (int i = 0; i < cities.Count; i++)
             {
                 CityParse(cities[i]);
             }
-            
-            //CityParse("http://www.nationaldirectoryofdentists.com/dentists/OH/Canton?page=9");
-            //CityParse("http://www.nationaldirectoryofdentists.com/dentists/IN/Muncie");
+
+            //CityParse("http://www.nationaldirectoryofdentists.com/dentists/AL/Decatur");
+            //CityParse("http://www.nationaldirectoryofdentists.com/dentists/AL/Birmingham");
 
             oWB.SaveAs(outputFile, Microsoft.Office.Interop.Excel.XlFileFormat.xlWorkbookDefault, Type.Missing, Type.Missing,
                 false, false, Microsoft.Office.Interop.Excel.XlSaveAsAccessMode.xlNoChange,
@@ -126,6 +129,7 @@ namespace AJGA_Data_Pull
             if (popwindow != null) { popwindow.Dispose(); }
 
         }
+        
         public void StateSelect(string mainURL)
         {
             mainbrowser.Navigate().GoToUrl(mainURL);
@@ -134,13 +138,19 @@ namespace AJGA_Data_Pull
             string stateXPath = "//div[@id='content']/div/div/div/p";
             foreach (IWebElement state in mainbrowser.FindElements(By.XPath(stateXPath)))
             {
-                string stateURL = state.FindElement(By.TagName("a")).GetAttribute("href");
-                Console.WriteLine(string.Format("--------------------- Pulling {0} Cities ---------------------", state.FindElement(By.TagName("a")).Text));
-                popwindow.Navigate().GoToUrl(stateURL);
-                CityList(stateURL);
-                //System.Threading.Thread.Sleep(1 * 1000); // wait one second after each state
+                string stateList = "Alaska,Arizona,Arkansas,California,Colorado,Connecticut,Delaware,District Of Columbia,Florida";
+                    //"Georgia,Hawaii,Idaho,Illinois,Indiana,Iowa,Kansas,Kentucky,Louisiana,Maine,Maryland,Massachusetts,Michigan,Minnesota,Mississippi,Missouri,Montana,Nebraska,Nevada,New Hampshire, New Jersey,New Mexico, New York,North Carolina, North Dakota,Ohio,Oklahoma,Oregon,Pennsylvania,Rhode Island, South Carolina,South Dakota, Tennessee, Texas, Utah, Vermont, Virginia, Washington, West Virginia,Wisconsin,Wyoming";
+                if (stateList.Contains(state.Text))
+                {
+                    string stateURL = state.FindElement(By.TagName("a")).GetAttribute("href");
+                    Console.WriteLine(string.Format("--------------------- Pulling {0} Cities ---------------------", state.FindElement(By.TagName("a")).Text));
+                    popwindow.Navigate().GoToUrl(stateURL);
+                    CityList(stateURL);
+                }
             }
+            System.Threading.Thread.Sleep(1 * 1000); // wait one second after each state
         }
+
         public void CityList(string stateURL)
         {
             // parse page
@@ -158,6 +168,7 @@ namespace AJGA_Data_Pull
                 cities.Add(cityURL);
             }
         }
+        
         public void CityParse(string CityURL)
         {
             mainbrowser.Navigate().GoToUrl(CityURL);
@@ -190,35 +201,140 @@ namespace AJGA_Data_Pull
                     try { drec.CitySection = CityURL; } catch { }
                     try { drec.Name = popwindow.FindElement(By.XPath("//div[@class='prodetailsname']")).Text; } catch { }
                     try { drec.FName = drec.Name.Split(' ')[0]; } catch { }
-                    try { drec.LName = drec.Name.Split(' ')[1]; } catch { }
-                    try { 
-                        RecDetails = popwindow.FindElement(By.XPath("//div[@class='address']")).Text.Replace("\r", "").Split('\n');
+                    try {
+                        int pieceNum = 1;
+
+                        string[] NamePieces = drec.Name.Substring(drec.FName.Length + 1).Split(' ');
+                        string lastPiece = NamePieces[NamePieces.Count() - 1];
+                        if (lastPiece == "DMD" || lastPiece == "DDS") {
+                            NamePieces = NamePieces.Where(w => w != lastPiece).ToArray();
+                        }
+                        int totalPieces = NamePieces.Count();
+
+                        foreach (string piece in NamePieces)
+                        {
+                            Boolean IsMiddle = (pieceNum < totalPieces);
+                            
+                            if (IsMiddle && piece.Length > 1 && piece.Length<3)
+                            {
+                                drec.LName += piece;
+                            }
+
+                            if (!IsMiddle)
+                            {
+                                drec.LName += piece;
+                            }
+
+                            if (IsMiddle && (piece.Length == 1 || piece.Length > 2)) {
+                                drec.FName += " " + piece;
+                            }
+                            pieceNum += 1;
+                        }
+                    
+                    } catch { }
+
+                    int CSZline = 0;
+                    
+                    // Grab the capture location so we can select correct city, st when multiple exist in address fields
+                    string captureLoc = popwindow.FindElement(By.XPath("//div[@id='resultsheader']")).Text;
+                    captureLoc = captureLoc.Substring(captureLoc.IndexOf("Dentists in") + 12);
+
+                    try
+                    {
+                        // create rec details array
+                        foreach (IWebElement addressrow in popwindow.FindElements(By.XPath("//div[@class='address']")))
+                        {
+                            if (addressrow.Text.Contains(captureLoc))
+                            {
+                                RecDetails = addressrow.Text.Replace("\r", "").Split('\n');
+                                break;
+                            }
+                        }
+                        // check for Business Header line, rip it out
+                        if (popwindow.FindElement(By.XPath("//div[@class='address']")).GetAttribute("innerHTML").Contains("<b>"))
+                        { RecDetails = RecDetails.Where(w => w != RecDetails[0]).ToArray(); }
+
+                        // find city,st zip line
+                        string pattern = @",\s(AL|AK|AS|AZ|AR|CA|CO|CT|DE|DC|FM|FL|GA|GU|HI|ID|IL|IN|IA|KS|KY|LA|ME|MH|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|MP|OH|OK|OR|PW|PA|PR|RI|SC|SD|TN|TX|UT|VT|VI|VA|WA|WV|WI|WY)\s\d{5}";
+                        foreach (string line in RecDetails)
+                        { 
+                            if (Regex.IsMatch(line, pattern)) { break; } else { CSZline += 1; }
+                        }
+
                         if (RecDetails.Count() > 1) 
-                            { AddressLine = RecDetails[0]; CityStZip = RecDetails[1]; } 
+                            { 
+                            AddressLine = RecDetails[0];                            
+                            CityStZip = RecDetails[CSZline]; 
+                        } 
                             else { CityStZip = RecDetails[0]; }
                     } catch { }
-                    try { drec.Address = AddressLine; } catch { }
+                    try {
+                        // double address line exists
+                        if (CSZline == 2)
+                        {
+                            drec.Address = RecDetails[0];
+                            drec.Address2 = RecDetails[1];
+                        }
+                        else
+                        {
+                            // single address line exists
+                            if (CSZline == 1) { 
+                                // # 123 at the end
+                                if (AddressLine.Contains(" #"))
+                                {
+                                    drec.Address = AddressLine.Substring(0, AddressLine.IndexOf(" #"));
+                                    drec.Address2 = AddressLine.Substring(AddressLine.IndexOf(" #") + 1);
+                                }
+                                // Ste 123 at the end
+                                else if (AddressLine.ToUpper().Contains(" STE"))
+                                {
+                                    drec.Address = AddressLine.Substring(0, AddressLine.ToUpper().IndexOf(" STE"));
+                                    drec.Address2 = AddressLine.Substring(AddressLine.ToUpper().IndexOf(" STE") + 1);
+                                }
+                                // Suite 123 at the end
+                                else if (AddressLine.ToUpper().Contains(" SUITE"))
+                                {
+                                    drec.Address = AddressLine.Substring(0, AddressLine.ToUpper().IndexOf(" SUITE"));
+                                    drec.Address2 = AddressLine.Substring(AddressLine.ToUpper().IndexOf(" SUITE") + 1);
+                                }
+                                else if (AddressLine.ToUpper().Substring(0, 5) == "SUITE")
+                                {
+                                    AddressLine = AddressLine.Substring(AddressLine.IndexOf(" ") + 1);
+                                    drec.Address = AddressLine.Substring(AddressLine.IndexOf(" ") + 1);
+                                    drec.Address2 = "Suite " + AddressLine.Split(' ')[0];
+                                }
+                                else { drec.Address = AddressLine; }
+                            }
+                        }
+
+                    } catch { }
                     try { drec.City = CityStZip.Split(',')[0]; } catch { }
                     try { drec.St = CityStZip.Split(',')[1].Trim().Split(' ')[0]; } catch { }
                     try { drec.Zip = CityStZip.Split(',')[1].Trim().Split(' ')[1]; } catch { }
-                    try { drec.Phone = RecDetails[2].Split(':')[1].Trim(); } catch { }
-                    try { drec.Fax = RecDetails[3].Split(':')[1].Trim(); } catch { }
-                    try { drec.Other = RecDetails[4]; } catch { }
+
+                    for (int i = CSZline + 1; i < RecDetails.Count(); i++)
+                    {
+                        if (RecDetails[i].Contains("phone")) { drec.Phone = RecDetails[i].Split(':')[1].Trim(); }
+                        if (RecDetails[i].Contains("fax")) { drec.Fax = RecDetails[i].Split(':')[1].Trim(); }
+                    }
+
                     try { drec.Specialty = popwindow.FindElement(By.XPath("//div[@class='prodetailsspecialty']")).Text; } catch { }
                     try { drec.URL = popURL; } catch { }
-                   
+
                     // Place in Excel Row
                     oXL.Cells[excelRow, 1] = drec.CitySection;
                     oXL.Cells[excelRow, 2] = drec.Name;
-                    oXL.Cells[excelRow, 3] = drec.Address;
-                    oXL.Cells[excelRow, 4] = drec.City;
-                    oXL.Cells[excelRow, 5] = drec.St;
-                    oXL.Cells[excelRow, 6] = drec.Zip;
-                    oXL.Cells[excelRow, 7] = drec.Phone;
-                    oXL.Cells[excelRow, 8] = drec.Fax;
-                    oXL.Cells[excelRow, 9] = drec.Other;
-                    oXL.Cells[excelRow, 10] = drec.Specialty;
-                    oXL.Cells[excelRow, 11] = drec.URL;
+                    oXL.Cells[excelRow, 3] = drec.FName;
+                    oXL.Cells[excelRow, 4] = drec.LName;
+                    oXL.Cells[excelRow, 5] = drec.Address;
+                    oXL.Cells[excelRow, 6] = drec.Address2;
+                    oXL.Cells[excelRow, 7] = drec.City;
+                    oXL.Cells[excelRow, 8] = drec.St;
+                    oXL.Cells[excelRow, 9] = drec.Zip;
+                    oXL.Cells[excelRow, 10] = drec.Phone;
+                    oXL.Cells[excelRow, 11] = drec.Fax;
+                    oXL.Cells[excelRow, 12] = drec.Specialty;
+                    oXL.Cells[excelRow, 13] = drec.URL;
 
                     excelRow += 1;
                 }

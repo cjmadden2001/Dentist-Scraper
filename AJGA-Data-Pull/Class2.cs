@@ -45,19 +45,17 @@ namespace Aetna_Scraper
 
         public int excelRow = 2;
         List<string> cities = new List<string>();
-        static void Main(string[] args)
-        {
-            Program prog = new Program();
-            //prog.StateSelect("http://www.nationaldirectoryofdentists.com/dentists/");
-            prog.DentistParser();
+        //static void Main(string[] args)
+        //{
+        //    Program prog = new Program();
+        //    //prog.StateSelect("http://www.nationaldirectoryofdentists.com/dentists/");
+        //    prog.DentistParser();
 
-        }
+        //}
 
         public void TestMethod()
         {
             popwindow.Navigate().GoToUrl("https://www.whitepages.com/");
-
-            string waithere = "";
 
         }
 
@@ -105,7 +103,7 @@ namespace Aetna_Scraper
             oXL.Cells[1, 11] = "URL";
 
             // Parse City
-            StateSelect("https://www.aetna.com/dsepublic/#/contentPage?page=providerResults&parameters=searchText%3D'All%20Dental%20Professionals';isGuidedSearch%3Dtrue&site_id=DirectLinkDental&language=en");
+            //StateSelect("https://www.aetna.com/dsepublic/#/contentPage?page=providerResults&parameters=searchText%3D''All%20Dental%20Professionals'';isGuidedSearch%3Dtrue&site_id=DirectLinkDental&language=en");
             for (int i = 0; i < cities.Count; i++)
             {
                 CityParse(cities[i]);
