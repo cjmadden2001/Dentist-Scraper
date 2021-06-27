@@ -49,8 +49,8 @@ namespace Aetna_Scraper
         public int excelRow = 2;
         List<string> cities = new List<string>();
 
-        string[] stateList = { "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "District Of Columbia", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin" };
-        //  "North Dakota", "Wyoming", "South Dakota", "Alabama", "Alaska",
+        string[] stateList = { "District Of Columbia", "Montana", "Rhode Island", "Maine", "New Mexico", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri",  "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "South Carolina", "Tennessee", "Texas", "Utah", "Virginia", "Washington", "West Virginia", "Wisconsin" };
+        // "Alabama", "Alaska", "Delaware", "North Dakota", "South Dakota", "Vermont", "Wyoming"
 
         public void DentistParser()
         {
