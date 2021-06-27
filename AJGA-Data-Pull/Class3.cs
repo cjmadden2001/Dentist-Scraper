@@ -12,8 +12,8 @@ namespace Main
 
         static void Main(string[] args)
         {
-            Dentist_Scraper.Program prog = new Dentist_Scraper.Program();
-            //Aetna_Scraper.AetnaProgram prog = new Aetna_Scraper.AetnaProgram();
+            //Dentist_Scraper.Program prog = new Dentist_Scraper.Program();
+            Aetna_Scraper.AetnaProgram prog = new Aetna_Scraper.AetnaProgram();
             prog.DentistParser();
         }
 
