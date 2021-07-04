@@ -12,6 +12,7 @@ using Excel = Microsoft.Office.Interop.Excel;
 using System.Runtime.InteropServices;
 using Microsoft.Office.Core;
 using System.Text.RegularExpressions;
+using System.Collections.Specialized;
 
 namespace Aetna_Scraper
 {
@@ -49,9 +50,10 @@ namespace Aetna_Scraper
         public int excelRow = 2;
         List<string> cities = new List<string>();
 
-        string[] stateList = { "District Of Columbia", "Montana", "Rhode Island", "Maine", "New Mexico", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri",  "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "South Carolina", "Tennessee", "Texas", "Utah", "Virginia", "Washington", "West Virginia", "Wisconsin" };
-        // "Alabama", "Alaska", "Delaware", "North Dakota", "South Dakota", "Vermont", "Wyoming"
-
+        string[] stateList = {"Vermont"};
+        //  "Ohio", "Pennsylvania", "New Jersey", "Iowa", "Utah", "Virginia", "Washington", "West Virginia", "Wisconsin", "Arkansas",  "Colorado", "Connecticut",  "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana",  "Kansas", "Kentucky", "Louisiana", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri",  "Nebraska", "Nevada",  "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "South Carolina", "Tennessee", "Texas",  
+        // "Alabama", "Alaska", "California", "Delaware", "Florida","North Dakota", "South Dakota", "Vermont", "Wyoming", "District Of Columbia", "Montana", "Rhode Island", "Maine", "New Mexico", "Arizona",
+        //"New Hampshire",
         public void DentistParser()
         {
 
@@ -105,7 +107,7 @@ namespace Aetna_Scraper
 
             // Select arbitrary state to get to the starting list
             waitForElement("//input[@id='zip1']");
-            mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys("Alabama");
+            mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys("Vermont");
             System.Threading.Thread.Sleep(1 * 1000); // 0.5 seconds
             mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys(Keys.Tab);
             System.Threading.Thread.Sleep(1*1000); // 0.5 seconds
@@ -116,7 +118,7 @@ namespace Aetna_Scraper
 
             foreach (string state in stateList) { 
                 StateSelect();
-                StateParse();
+                //StateParse();
             }
 
 
@@ -141,7 +143,7 @@ namespace Aetna_Scraper
             waitForElement("//input[@id='zip1']");
             mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).Clear();
             System.Threading.Thread.Sleep(500); // 0.5 seconds
-            mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys("Ohio");
+            mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys("Vermont");
             System.Threading.Thread.Sleep(1000); // 0.5 seconds
             mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys(Keys.Tab);
             mainbrowser.FindElement(By.XPath("//button[contains(text(),'Update my view')]")).Click();
@@ -155,7 +157,8 @@ namespace Aetna_Scraper
 
             // change location
 
-            foreach (string state in stateList) {
+            foreach (string state in stateList)
+            {
                 waitForElement("//a[@id='aet-change-loc']");
                 mainbrowser.FindElement(By.XPath("//a[@id='aet-change-loc']")).Click();
 
@@ -166,13 +169,41 @@ namespace Aetna_Scraper
                 System.Threading.Thread.Sleep(1000); // 0.5 seconds
                 mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys(Keys.Tab);
                 mainbrowser.FindElement(By.XPath("//button[contains(text(),'Update my view')]")).Click();
+                waitForLoad();
 
-                StateParse();
+                // Loop through Alphabet
+
+                string AlphaRowXPath = "//div[@class='gridAlphaSort clearFix row mobilehide']/div[@class='alphasort_block']";
+                StringCollection alphas2parse = new StringCollection();
+
+                // store letters in collection since leaving this page will lose the elements and place in the list
+                foreach (IWebElement alpha in mainbrowser.FindElements(By.XPath(AlphaRowXPath)))
+                {
+                    alphas2parse.Add(alpha.Text);
+                }
+
+                // track position of letter in collection
+                int alphalocation = 0;
+                foreach (string alpha in alphas2parse)
+                {                   
+                    if ("ABCDEFGHIJKLMNOPQRSTUVWXYZ".Contains(alpha)) // skip if not a letter
+                    {
+                        // click letter
+                        mainbrowser.FindElements(By.XPath(AlphaRowXPath))[alphalocation].Click();  // ref full path of element
+                        waitForLoad();
+                        StateParse(state, alpha);
+
+                        // click reset
+                        mainbrowser.FindElements(By.XPath("//button[@name='reset']"))[0].Click();
+                        waitForLoad();
+                    }
+                    alphalocation++;
+                }
             }
 
         }
 
-        public void StateParse()
+        public void StateParse(string state, string alpha)
         {
 
             // Check for Next Button
@@ -184,7 +215,7 @@ namespace Aetna_Scraper
             {
                 // Get Jobs
                 waitForLoad();
-                Console.WriteLine(string.Format("--------------------- Parsing Page {0} ---------------------", currentPage.ToString()));
+                Console.WriteLine(string.Format("--------------------- Parsing {0} - Alpha {1}-{2} ---------------------", state, alpha, currentPage.ToString()));
 
                 // parse page
                 string JobRowXPath = "//div[@class='col-xs-12 pad0 dataGridRow customPurpleRecord']";
@@ -280,9 +311,12 @@ namespace Aetna_Scraper
                     }
 
                     currentPage++;
-                    //URL = mainbrowser.Url;
+                    if (currentPage%10==0) {
+                        System.Threading.Thread.Sleep(180*1000); // 120 seconds
+                    }
+                                                                      //URL = mainbrowser.Url;
 
-                }
+                    }
                 catch { }
 
 
