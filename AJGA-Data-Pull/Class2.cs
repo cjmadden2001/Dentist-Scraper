@@ -78,12 +78,12 @@ namespace Aetna_Scraper
         // "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District Of Columbia",   
 
           public static List<State> ListOfStates = new List<State> {
-          //us
+          //        abbr, name, alpa, complete?
           new State("AL", "Alabama", "", true),
           new State("AK", "Alaska", "", true),
-          new State("AZ", "Arizona", "T", false),
-          new State("AR", "Arkansas", "", false),
-          new State("CA", "California", "", false),
+          new State("AZ", "Arizona", "", true),
+          new State("AR", "Arkansas", "", true),
+          new State("CA", "California", "B", false),
           new State("CO", "Colorado", "", false),
           new State("CT", "Connecticut", "", false),
           new State("DE", "Delaware", "", false),
@@ -307,7 +307,7 @@ namespace Aetna_Scraper
             {
                 // Get Jobs
                 waitForLoad();
-                Console.WriteLine(string.Format("--------------------- Parsing {0} - Alpha {1}-{2} ---------------------", state, alpha, currentPage.ToString()));
+                Console.WriteLine(string.Format("------------- {3} - Parsing {0} - Alpha {1}-{2} ---------------------", state, alpha, currentPage.ToString(), DateTime.Now.ToString("h:mm tt")));
 
                 // parse page
                 string JobRowXPath = "//div[@class='col-xs-12 pad0 dataGridRow customPurpleRecord']";
@@ -403,8 +403,9 @@ namespace Aetna_Scraper
                     }
 
                     currentPage++;
+                    int waittime = 30;// in seconds
                     if (currentPage%10==0) {
-                        System.Threading.Thread.Sleep(180*1000); // 120 seconds
+                        System.Threading.Thread.Sleep(waittime*1000); 
                     }
                                                                       //URL = mainbrowser.Url;
 
