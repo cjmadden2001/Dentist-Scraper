@@ -17,6 +17,25 @@ using System.Collections.Specialized;
 namespace Aetna_Scraper
 {
 
+    public class State
+    {
+        public State(string abbr, string name, string na, Boolean cs)
+        {            
+            Name = name;
+            Complete = cs;
+            NextAlpha = na;
+        }
+        public string Abbreviation { get; set; }
+        public string Name { get; set; }
+        public string NextAlpha { get; set; }
+        public Boolean Complete { get; set; }
+
+        public override string ToString()
+        {
+            return string.Format("{0} - {1}", Abbreviation, Name);
+        }
+    }
+
     public class Dentist
     {
         public string CitySection { get; set; }
@@ -33,9 +52,8 @@ namespace Aetna_Scraper
         public string Other { get; set; }
         public string Specialty { get; set; }
         public string URL { get; set; }
-
     }
-
+       
     public class AetnaProgram
     {
         // Start Chrome windows (main and secondary)
@@ -50,10 +68,71 @@ namespace Aetna_Scraper
         public int excelRow = 2;
         List<string> cities = new List<string>();
 
-        string[] stateList = {"Vermont"};
-        //  "Ohio", "Pennsylvania", "New Jersey", "Iowa", "Utah", "Virginia", "Washington", "West Virginia", "Wisconsin", "Arkansas",  "Colorado", "Connecticut",  "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana",  "Kansas", "Kentucky", "Louisiana", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri",  "Nebraska", "Nevada",  "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "South Carolina", "Tennessee", "Texas",  
-        // "Alabama", "Alaska", "California", "Delaware", "Florida","North Dakota", "South Dakota", "Vermont", "Wyoming", "District Of Columbia", "Montana", "Rhode Island", "Maine", "New Mexico", "Arizona",
-        //"New Hampshire",
+        string[] stateList = { "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida" };
+        // "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut","Delaware", "Florida",
+        // "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana",  "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts",
+        // "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",  "New Jersey", "New Mexico", 
+        // "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", 
+        // "South Dakota", "Tennessee", "Texas",  "Utah", 
+        // "Vermont", 
+        // "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District Of Columbia",   
+
+          public static List<State> ListOfStates = new List<State> {
+          //us
+          new State("AL", "Alabama", "", true),
+          new State("AK", "Alaska", "", true),
+          new State("AZ", "Arizona", "T", false),
+          new State("AR", "Arkansas", "", false),
+          new State("CA", "California", "", false),
+          new State("CO", "Colorado", "", false),
+          new State("CT", "Connecticut", "", false),
+          new State("DE", "Delaware", "", false),
+          new State("DC", "District Of Columbia", "", false),
+          new State("FL", "Florida", "", false),
+          new State("GA", "Georgia", "", false),
+          new State("HI", "Hawaii", "", false),
+          new State("ID", "Idaho", "", false),
+          new State("IL", "Illinois", "", false),
+          new State("IN", "Indiana", "", false),
+          new State("IA", "Iowa", "", false),
+          new State("KS", "Kansas", "", false),
+          new State("KY", "Kentucky", "", false),
+          new State("LA", "Louisiana", "", false),
+          new State("ME", "Maine", "", false),
+          new State("MD", "Maryland", "", false),
+          new State("MA", "Massachusetts", "", false),
+          new State("MI", "Michigan", "", false),
+          new State("MN", "Minnesota", "", false),
+          new State("MS", "Mississippi", "", false),
+          new State("MO", "Missouri", "", false),
+          new State("MT", "Montana", "", false),
+          new State("NE", "Nebraska", "", false),
+          new State("NV", "Nevada", "", false),
+          new State("NH", "New Hampshire", "", false),
+          new State("NJ", "New Jersey", "", false),
+          new State("NM", "New Mexico", "", false),
+          new State("NY", "New York", "", false),
+          new State("NC", "North Carolina", "", false),
+          new State("ND", "North Dakota", "", false),
+          new State("OH", "Ohio", "", false),
+          new State("OK", "Oklahoma", "", false),
+          new State("OR", "Oregon", "", false),
+          new State("PA", "Pennsylvania", "", false),
+          new State("RI", "Rhode Island", "", false),
+          new State("SC", "South Carolina", "", false),
+          new State("SD", "South Dakota", "", false),
+          new State("TN", "Tennessee", "", false),
+          new State("TX", "Texas", "", false),
+          new State("UT", "Utah", "", false),
+          new State("VT", "Vermont", "", false),
+          new State("VA", "Virginia", "", false),
+          new State("WA", "Washington", "", false),
+          new State("WV", "West Virginia", "", false),
+          new State("WI", "Wisconsin", "", false),
+          new State("WY", "Wyoming", "", false)
+          };
+
+
         public void DentistParser()
         {
 
@@ -157,8 +236,12 @@ namespace Aetna_Scraper
 
             // change location
 
-            foreach (string state in stateList)
+            foreach (State USState in ListOfStates)
+            //foreach (string state in stateList)
             {
+                if (USState.Complete) { continue; } // if the state is done, skip this iteration
+
+                string state = USState.Name;
                 waitForElement("//a[@id='aet-change-loc']");
                 mainbrowser.FindElement(By.XPath("//a[@id='aet-change-loc']")).Click();
 
@@ -182,11 +265,20 @@ namespace Aetna_Scraper
                     alphas2parse.Add(alpha.Text);
                 }
 
+                string LetterParseList = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // list of acceptable alphas to parse
+                string NextLetter2Parse = USState.NextAlpha; // where do we start?
+
+                // remove letters already parsed so it will skip them just like those that don't exist "*"
+                if (NextLetter2Parse != "") {
+                    while (LetterParseList.Substring(0,1) != NextLetter2Parse) 
+                    { LetterParseList = LetterParseList.Substring(1, LetterParseList.Length - 1); }
+                }
+
                 // track position of letter in collection
                 int alphalocation = 0;
                 foreach (string alpha in alphas2parse)
                 {                   
-                    if ("ABCDEFGHIJKLMNOPQRSTUVWXYZ".Contains(alpha)) // skip if not a letter
+                    if (LetterParseList.Contains(alpha)) // skip if not a letter
                     {
                         // click letter
                         mainbrowser.FindElements(By.XPath(AlphaRowXPath))[alphalocation].Click();  // ref full path of element
