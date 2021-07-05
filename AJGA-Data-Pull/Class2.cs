@@ -77,41 +77,43 @@ namespace Aetna_Scraper
         // "Vermont", 
         // "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District Of Columbia",   
 
-          public static List<State> ListOfStates = new List<State> {
+        int waittime = 30;// in seconds
+
+        public static List<State> ListOfStates = new List<State> {
           //        abbr, name, alpa, complete?
-          new State("AL", "Alabama", "", true),
-          new State("AK", "Alaska", "", true),
-          new State("AZ", "Arizona", "", true),
-          new State("AR", "Arkansas", "", true),
-          new State("CA", "California", "B", false),
-          new State("CO", "Colorado", "", false),
-          new State("CT", "Connecticut", "", false),
-          new State("DE", "Delaware", "", false),
-          new State("DC", "District Of Columbia", "", false),
-          new State("FL", "Florida", "", false),
-          new State("GA", "Georgia", "", false),
-          new State("HI", "Hawaii", "", false),
-          new State("ID", "Idaho", "", false),
-          new State("IL", "Illinois", "", false),
-          new State("IN", "Indiana", "", false),
-          new State("IA", "Iowa", "", false),
-          new State("KS", "Kansas", "", false),
-          new State("KY", "Kentucky", "", false),
-          new State("LA", "Louisiana", "", false),
-          new State("ME", "Maine", "", false),
-          new State("MD", "Maryland", "", false),
-          new State("MA", "Massachusetts", "", false),
-          new State("MI", "Michigan", "", false),
-          new State("MN", "Minnesota", "", false),
-          new State("MS", "Mississippi", "", false),
-          new State("MO", "Missouri", "", false),
-          new State("MT", "Montana", "", false),
-          new State("NE", "Nebraska", "", false),
-          new State("NV", "Nevada", "", false),
-          new State("NH", "New Hampshire", "", false),
-          new State("NJ", "New Jersey", "", false),
-          new State("NM", "New Mexico", "", false),
-          new State("NY", "New York", "", false),
+          //new State("AL", "Alabama", "", true),
+          //new State("AK", "Alaska", "", true),
+          //new State("AZ", "Arizona", "", true),
+          //new State("AR", "Arkansas", "", true),
+          //new State("CA", "California", "", true), // Mel's PC here
+          //new State("CO", "Colorado", "", true),
+          //new State("CT", "Connecticut", "", true),
+          //new State("DE", "Delaware", "", true),
+          //new State("DC", "District Of Columbia", "", true),
+          //new State("FL", "Florida", "", false),
+          //new State("GA", "Georgia", "", false),
+          //new State("HI", "Hawaii", "", false),
+          //new State("ID", "Idaho", "", false),
+          //new State("IL", "Illinois", "", false),
+          //new State("IN", "Indiana", "", false),
+          //new State("IA", "Iowa", "", false),
+          //new State("KS", "Kansas", "", false),
+          //new State("KY", "Kentucky", "", false),
+          //new State("LA", "Louisiana", "", false),
+          //new State("ME", "Maine", "", false),
+          //new State("MD", "Maryland", "", false),
+          //new State("MA", "Massachusetts", "", false),
+          //new State("MI", "Michigan", "", false),
+          //new State("MN", "Minnesota", "", false),
+          //new State("MS", "Mississippi", "", false),
+          //new State("MO", "Missouri", "", false),
+          //new State("MT", "Montana", "", false),
+          new State("NE", "Nebraska", "", true),
+          new State("NV", "Nevada", "", true),
+          new State("NH", "New Hampshire", "", true),
+          new State("NJ", "New Jersey", "", true),
+          new State("NM", "New Mexico", "", true),
+          new State("NY", "New York", "", true),
           new State("NC", "North Carolina", "", false),
           new State("ND", "North Dakota", "", false),
           new State("OH", "Ohio", "", false),
@@ -247,12 +249,17 @@ namespace Aetna_Scraper
 
                 waitForElement("//input[@id='zip1']");
                 mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).Clear();
-                System.Threading.Thread.Sleep(500); // 0.5 seconds
-                mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys(state);
                 System.Threading.Thread.Sleep(1000); // 0.5 seconds
+                mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys(state);
+                System.Threading.Thread.Sleep(2000); // 0.5 seconds
                 mainbrowser.FindElement(By.XPath("//input[@id='zip1']")).SendKeys(Keys.Tab);
+                System.Threading.Thread.Sleep(2000); // 0.5 seconds
                 mainbrowser.FindElement(By.XPath("//button[contains(text(),'Update my view')]")).Click();
                 waitForLoad();
+                if (mainbrowser.FindElements(By.XPath("//button[contains(text(),'Update my view')]")).Count > 0) { // failures here, retry click
+                    mainbrowser.FindElement(By.XPath("//button[contains(text(),'Update my view')]")).Click();
+                    waitForLoad();
+                }
 
                 // Loop through Alphabet
 
@@ -281,12 +288,31 @@ namespace Aetna_Scraper
                     if (LetterParseList.Contains(alpha)) // skip if not a letter
                     {
                         // click letter
-                        mainbrowser.FindElements(By.XPath(AlphaRowXPath))[alphalocation].Click();  // ref full path of element
+                        try { 
+                            mainbrowser.FindElements(By.XPath(AlphaRowXPath))[alphalocation].Click();  // ref full path of element
+                        }
+                        catch { string retry = "breakpoint here"; } // allow for manual restart after failure
                         waitForLoad();
+
+                        if (mainbrowser.FindElements(By.XPath("//button[@name='reset']")).Count == 0) // letter click didn't work retry
+                        {
+                            // click letter
+                            try
+                            {
+                                System.Threading.Thread.Sleep(10 * 1000); // 10 seconds
+                                mainbrowser.FindElements(By.XPath(AlphaRowXPath))[alphalocation].Click();  // ref full path of element
+                            }
+                            catch { string retry = "breakpoint here"; } // allow for manual restart after failure
+                            waitForLoad();
+                        }
+                        
                         StateParse(state, alpha);
 
                         // click reset
-                        mainbrowser.FindElements(By.XPath("//button[@name='reset']"))[0].Click();
+                        try { 
+                            mainbrowser.FindElements(By.XPath("//button[@name='reset']"))[0].Click();
+                        }
+                        catch { string retry = "breakpoint here"; } // allow for manual restart after failure
                         waitForLoad();
                     }
                     alphalocation++;
@@ -403,7 +429,6 @@ namespace Aetna_Scraper
                     }
 
                     currentPage++;
-                    int waittime = 30;// in seconds
                     if (currentPage%10==0) {
                         System.Threading.Thread.Sleep(waittime*1000); 
                     }
